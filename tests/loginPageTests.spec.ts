@@ -1,16 +1,13 @@
-import { test, expect } from "@playwright/test";
-import { PageManager } from "../page-objects/pageManager";
+import { test } from "../page-objects/baseTestFixtures";
+import { expect } from "@playwright/test";
 import invalidCredentials from "../test-data/invalidCredentialData.json";
 
 test.beforeEach(async ({ page }) => {
   await page.goto(process.env.BASE_URL!);
 });
-test("Login with valid credentials", async ({ page }) => {
-  const pageManager = new PageManager(page);
-  await pageManager
-    .getLoginPage()
-    .login(process.env.USER_NAME!, process.env.PASSWORD!);
-  await expect(pageManager.getMainPage().logOutButton).toBeVisible();
+test("Login with valid credentials", async ({ loginPage, mainPage }) => {
+  await loginPage.login(process.env.USER_NAME!, process.env.PASSWORD!);
+  await expect(mainPage.logOutButton).toBeVisible();
 });
 
 test.describe("Login with empty Username", () => {
@@ -23,9 +20,11 @@ test.describe("Login with empty Username", () => {
     { userName: "", password: "", error: "Please fill out this field." },
   ];
   for (const { userName, password, error } of emptyUserName) {
-    test(`Login with "${userName}" and "${password}"`, async ({ page }) => {
-      const pageManager = new PageManager(page);
-      await pageManager.getLoginPage().login(userName, password);
+    test(`Login with "${userName}" and "${password}"`, async ({
+      page,
+      loginPage,
+    }) => {
+      await loginPage.login(userName, password);
       const userNameField = page.getByRole("textbox", {
         name: "Username",
       });
@@ -36,9 +35,8 @@ test.describe("Login with empty Username", () => {
     });
   }
 });
-test(`Login with empty Password`, async ({ page }) => {
-  const pageManager = new PageManager(page);
-  await pageManager.getLoginPage().login("admin", "");
+test(`Login with empty Password`, async ({ page, loginPage }) => {
+  await loginPage.login("admin", "");
   const userNameField = page.getByRole("textbox", {
     name: "Password",
   });
@@ -51,15 +49,10 @@ test.describe("Login with invalid credentials", () => {
   for (const credentials of invalidCredentials) {
     test(`Login with "${credentials.userName}" and "${credentials.password}"`, async ({
       page,
+      loginPage,
     }) => {
-      const pageManager = new PageManager(page);
-      await pageManager
-        .getLoginPage()
-        .login(credentials.userName, credentials.password);
-      expect(await pageManager.getLoginPage().getErrorMessage()).toBe(
-        credentials.error
-      );
+      await loginPage.login(credentials.userName, credentials.password);
+      expect(await loginPage.getErrorMessage()).toBe(credentials.error);
     });
   }
 });
-
